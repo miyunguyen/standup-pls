@@ -1,0 +1,51 @@
+body {
+    width: 260px;
+    padding: 16px;
+    font-family: system-ui, sans-serif;
+}
+
+h1 {
+    font-size: 16px;
+    margin: 0 0 12px;
+}
+
+.countdown {
+    font-size: 36px;
+    font-weight: 600;
+    text-align: center;
+    margin: 8px 0 16px;
+}
+
+label {
+    display: block;
+    font-size: 12px;
+    margin-bottom: 4px;
+}
+
+select,
+input {
+    width: 100%;
+    padding: 6px;
+    margin-bottom: 12px;
+    box-sizing: border-box;
+}
+
+.actions {
+    display: flex;
+    gap: 8px;
+}
+
+button {
+    flex: 1;
+    padding: 8px;
+    border: 0;
+    border-radius: 6px;
+    background: #2563eb;
+    color: #fff;
+    cursor: pointer;
+}
+
+button.secondary {
+    background: #e5e7eb;
+    color: #111;
+}
