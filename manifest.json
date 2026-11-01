@@ -3,7 +3,7 @@
   "name": "Standup, pls",
   "version": "1.0.0",
   "description": "Reminds you to stand up and move on a timer.",
-  "permissions": ["alarms", "notifications", "storage"],
+  "permissions": ["alarms", "notifications", "storage", "offscreen"],
   "action": {
     "default_popup": "popup/popup.html",
     "default_icon": {

@@ -7,27 +7,50 @@
     <link rel="stylesheet" href="popup.css" />
 </head>
 
-<body>
-    <h1>Standup, pls</h1>
+<body data-state="idle">
+    <header>
+        <h1>Standup, pls</h1>
+        <span id="badge" class="badge">Ready</span>
+    </header>
 
-    <div id="countdown" class="countdown">--:--</div>
+    <div class="ring-wrap">
+        <svg class="ring" viewBox="0 0 200 200" aria-hidden="true">
+            <defs>
+                <linearGradient id="grad" x1="0" y1="0" x2="1" y2="1">
+                    <stop offset="0%" stop-color="#22d3ee" />
+                    <stop offset="55%" stop-color="#8b5cf6" />
+                    <stop offset="100%" stop-color="#ec4899" />
+                </linearGradient>
+            </defs>
+            <circle class="track" cx="100" cy="100" r="88" />
+            <circle id="progress" class="progress" cx="100" cy="100" r="88" />
+        </svg>
+        <div class="ring-center" role="timer" aria-live="off">
+            <div id="countdown" class="countdown">--:--</div>
+            <div id="caption" class="caption">Pick a time</div>
+        </div>
+    </div>
 
     <label for="preset">Remind me every</label>
     <select id="preset">
-        <option value="15">15 minutes</option>
-        <option value="30" selected>30 minutes</option>
-        <option value="45">45 minutes</option>
-        <option value="60">1 hour</option>
-        <option value="90">1.5 hours</option>
+        <option value="20">20 minutes</option>
+        <option value="30">30 minutes</option>
+        <option value="45" selected>45 minutes</option>
+        <option value="60">60 minutes</option>
+        <option value="90">90 minutes</option>
         <option value="custom">Custom…</option>
     </select>
 
     <input id="custom" type="number" min="1" max="480" placeholder="Minutes (1–480)" hidden />
 
     <div class="actions">
-        <button id="start">Start</button>
-        <button id="reset" class="secondary">Reset</button>
+        <button id="start" class="primary">Start</button>
+        <button id="reset" class="ghost">Reset</button>
     </div>
+
+    <button id="mute" class="mute" type="button">Sound: ON</button>
+
+
 
     <script src="popup.js"></script>
 </body>

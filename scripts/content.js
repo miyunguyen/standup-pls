@@ -1,48 +1,78 @@
 const HOST_ID = "standup-pls-overlay";
 
-function showOverlay() {
+
+function showOverlay(reminders = []) {
     if (document.getElementById(HOST_ID)) return; // already showing
 
     const host = document.createElement("div");
     host.id = HOST_ID;
     const shadow = host.attachShadow({ mode: "closed" });
 
+    const items = reminders.map((text) => `<li>${text}</li>`).join("");
+
     shadow.innerHTML = `
-    <style>
-      .backdrop {
-        position: fixed;
-        inset: 0;
-        z-index: 2147483647;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        background: rgba(15, 23, 42, 0.92);
-        backdrop-filter: blur(8px);
-        font-family: system-ui, sans-serif;
-        color: #fff;
-      }
-      .card { max-width: 480px; padding: 32px; text-align: center; }
-      h1 { font-size: 32px; margin: 0 0 12px; }
-      p { font-size: 18px; line-height: 1.5; margin: 0 0 24px; }
-      .actions { display: flex; gap: 12px; justify-content: center; }
-      button {
-        padding: 12px 24px; font-size: 16px; border: 0;
-        border-radius: 8px; cursor: pointer;
-      }
-      #keep { background: #22c55e; color: #052e16; }
-      #stop { background: #e5e7eb; color: #111; }
-    </style>
-    <div class="backdrop" role="alertdialog" aria-modal="true" aria-labelledby="title">
-      <div class="card">
-        <h1 id="title">Stand up, pls! 🧍</h1>
-        <p>Stretch, walk around, look out a window, drink some water.<br />Your code will still be here.</p>
-        <div class="actions">
-          <button id="keep">Keep going</button>
-          <button id="stop">Stop</button>
+        <style>
+        .backdrop {
+            position: fixed;
+            inset: 0;
+            z-index: 2147483647;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(0, 0, 0, 0.95);
+            font-family: 'Lucida Sans', 'Lucida Sans Regular', 'Lucida Grande', 'Lucida Sans Unicode', Geneva, Verdana, sans-serif;
+            font-size: 16px;
+            color: #fff;
+        }
+        .card {
+            width: min(520px, 90vw);
+            padding: 28px;
+            background: #000;
+            border: 2px solid #fff;
+            box-shadow: 8px 8px 0 #fff;   /* hard offset shadow, same as the popup buttons */
+        }
+        h1 {
+            margin: 0 0 16px;
+            padding-bottom: 10px;
+            font-size: 24px;
+            text-transform: uppercase;
+            border-bottom: 2px solid #fff;
+        }
+        h1::before { content: "> "; }
+        h1::after { content: "_"; animation: blink 1s steps(1) infinite; }
+        ul { margin: 0 0 24px; padding: 0; list-style: none; line-height: 1.8; }
+        li::before { content: "• "; }
+        .actions { display: flex; gap: 16px; }
+        button {
+            flex: 1;
+            padding: 12px;
+            font: inherit;
+            font-weight: 700;
+            text-transform: uppercase;
+            color: #000;
+            background: #fff;
+            border: 2px solid #fff;
+            border-radius: 0;
+            cursor: pointer;
+        }
+        button:hover { background: #000; color: #fff; }
+        button:focus-visible { outline: 2px dashed #fff; outline-offset: 3px; }
+        #stop { background: #000; color: #fff; }
+        #stop:hover { background: #fff; color: #000; }
+        @keyframes blink { 50% { opacity: 0; } }
+        @media (prefers-reduced-motion: reduce) { h1::after { animation: none; } }
+        </style>
+        <div class="backdrop" role="alertdialog" aria-modal="true" aria-labelledby="title">
+        <div class="card">
+            <h1 id="title">Stand up, pls</h1>
+             <ul>${items}</ul>
+            <div class="actions">
+            <button id="keep">Keep going</button>
+            <button id="stop">Stop</button>
+            </div>
         </div>
-      </div>
-    </div>
-  `;
+        </div>
+    `;
 
     shadow.getElementById("keep").addEventListener("click", () => {
         chrome.runtime.sendMessage({ type: "KEEP_GOING" });
@@ -64,11 +94,11 @@ function hideOverlay() {
 }
 
 chrome.runtime.onMessage.addListener((msg) => {
-    if (msg.type === "SHOW_OVERLAY") showOverlay();
+    if (msg.type === "SHOW_OVERLAY") showOverlay(msg.reminders);
     if (msg.type === "HIDE_OVERLAY") hideOverlay();
 });
 
 // A tab opened or reloaded while the timer is "ringing" should also be blocked.
-chrome.storage.local.get("status").then(({ status }) => {
-    if (status === "ringing") showOverlay();
+chrome.storage.local.get(["status", "reminders"]).then(({ status, reminders }) => {
+    if (status === "ringing") showOverlay(reminders);
 });

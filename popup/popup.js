@@ -1,6 +1,19 @@
 const preset = document.getElementById("preset");
 const custom = document.getElementById("custom");
 const countdown = document.getElementById("countdown");
+const caption = document.getElementById("caption");
+const badge = document.getElementById("badge");
+const progress = document.getElementById("progress");
+
+
+// Circle's length = 2πr. We read r from the SVG so the two can't drift apart.
+const CIRCUMFERENCE = 2 * Math.PI * progress.r.baseVal.value;
+progress.style.strokeDasharray = CIRCUMFERENCE;
+
+// Local copy of what's in storage. Storage stays the source of truth.
+let state = { status: "idle", endTime: null, durationMin: null, muted: false };
+
+const muteBtn = document.getElementById("mute");
 
 function getMinutes() {
     if (preset.value !== "custom") return Number(preset.value);
@@ -15,37 +28,42 @@ function format(ms) {
     return `${m}:${s}`;
 }
 
-async function render() {
-    const { status, endTime, durationMin } = await chrome.storage.local.get([
-        "status", "endTime", "durationMin",
-    ]);
-    if (status === "running" && endTime) {
-        countdown.textContent = format(endTime - Date.now());
+// fraction: 1 = full ring, 0 = empty ring
+function setProgress(fraction) {
+    progress.style.strokeDashoffset = CIRCUMFERENCE * (1 - fraction);
+}
+
+function renderMute() {
+    muteBtn.textContent = state.muted ? "Sound: OFF" : "Sound: ON";
+}
+
+function render() {
+    renderMute();
+    const { status, endTime, durationMin } = state;
+    document.body.dataset.state = status;
+
+    if (status === "running" && endTime && durationMin) {
+        const remaining = Math.max(0, endTime - Date.now());
+        countdown.textContent = format(remaining);
+        caption.textContent = "Focus time";
+        badge.textContent = "Running";
+        setProgress(remaining / (durationMin * 60_000));
     } else if (status === "ringing") {
-        countdown.textContent = "Stand up!";
+        countdown.textContent = "00:00";
+        caption.textContent = "Stand up!";
+        badge.textContent = "Time's up";
+        setProgress(0);
     } else {
         countdown.textContent = durationMin ? format(durationMin * 60_000) : "--:--";
+        caption.textContent = durationMin ? "Ready to start" : "Pick a time";
+        badge.textContent = "Ready";
+        setProgress(durationMin ? 1 : 0);
     }
 }
 
-preset.addEventListener("change", () => {
-    custom.hidden = preset.value !== "custom";
-});
-
-document.getElementById("start").addEventListener("click", async () => {
-    const minutes = getMinutes();
-    if (minutes === null) return custom.focus();
-    await chrome.runtime.sendMessage({ type: "START", minutes });
-    render();
-});
-
-document.getElementById("reset").addEventListener("click", async () => {
-    await chrome.runtime.sendMessage({ type: "RESET" });
-    render();
-});
-
-async function restoreSelection() {
-    const { durationMin } = await chrome.storage.local.get("durationMin");
+// Make the dropdown match the saved duration when the popup opens.
+function restoreSelection() {
+    const { durationMin } = state;
     if (!durationMin) return;
     const isPreset = [...preset.options].some((o) => o.value === String(durationMin));
     if (isPreset) {
@@ -57,7 +75,35 @@ async function restoreSelection() {
     }
 }
 
-restoreSelection()
+preset.addEventListener("change", () => {
+    custom.hidden = preset.value !== "custom";
+});
 
-render();
-setInterval(render, 1000);
+document.getElementById("start").addEventListener("click", () => {
+    const minutes = getMinutes();
+    if (minutes === null) return custom.focus();
+    chrome.runtime.sendMessage({ type: "START", minutes });
+});
+
+document.getElementById("reset").addEventListener("click", () => {
+    chrome.runtime.sendMessage({ type: "RESET" });
+});
+
+// When the background changes storage, update our copy and redraw.
+chrome.storage.onChanged.addListener((changes, area) => {
+    if (area !== "local") return;
+    for (const [key, { newValue }] of Object.entries(changes)) state[key] = newValue;
+    render();
+});
+
+muteBtn.addEventListener("click", () => {
+    chrome.storage.local.set({ muted: !state.muted });
+});
+
+chrome.storage.local.get(["status", "endTime", "durationMin"]).then((saved) => {
+    state = { ...state, ...saved, status: saved.status ?? "idle" };
+    restoreSelection();
+    render();
+});
+
+setInterval(render, 250); // re-render from the local copy: no storage read per tick
