@@ -55,13 +55,34 @@ async function startTimer(minutes) {
         status: "running",
         durationMin: minutes,
         endTime: Date.now() + minutes * 60_000,
+        remainingMs: null,
     });
     await playSound("start");
 }
 
+async function pauseTimer() {
+  const { status, endTime } = await chrome.storage.local.get(["status", "endTime"]);
+  if (status !== "running" || !endTime) return; // only valid while running
+
+  const remainingMs = Math.max(0, endTime - Date.now());
+  await chrome.alarms.clear(ALARM_NAME);
+  await chrome.storage.local.set({ status: "paused", remainingMs, endTime: null });
+}
+
+async function resumeTimer() {
+  const { status, remainingMs } = await chrome.storage.local.get(["status", "remainingMs"]);
+  if (status !== "paused" || !remainingMs) return;
+
+  const endTime = Date.now() + remainingMs;
+  await chrome.alarms.create(ALARM_NAME, { when: endTime });
+  await chrome.storage.local.set({ status: "running", endTime, remainingMs: null });
+
+  await playSound("start");
+}
+
 async function stopTimer() {
     await chrome.alarms.clear(ALARM_NAME);
-    await chrome.storage.local.set({ status: "idle", endTime: null });
+    await chrome.storage.local.set({ status: "idle", endTime: null, remainingMs: null });
     await broadcast({ type: "HIDE_OVERLAY" });
 }
 
@@ -105,6 +126,12 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
                 break;
             case "RESET":
                 await stopTimer();
+                break;
+            case "PAUSE":
+                await pauseTimer();
+                break;
+            case "RESUME":
+                await resumeTimer();
                 break;
             case "KEEP_GOING":
                 await broadcast({ type: "HIDE_OVERLAY" });

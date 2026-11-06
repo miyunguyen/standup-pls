@@ -203,3 +203,18 @@ button:focus-visible {
     font-size: 12px;
     box-shadow: none;
 }
+
+button:disabled { 
+    opacity: 0.4; 
+    cursor: not-allowed; 
+    box-shadow: none;
+}
+
+button:disabled:hover { 
+    background: var(--paper); 
+    color: var(--ink); 
+}
+
+body[data-state="paused"] .badge { 
+    text-decoration: underline; 
+}
