@@ -27,11 +27,11 @@ Something missing? Make an issue and let me know!
 
 ## How to install ?
 
-- Download and extract the release.
+- Download and extract the [release](https://github.com/miyunguyen/standup-pls/releases) .zip.
 
 - Open your extension setting on your browser, enable developer mode, then load unpacked the extracted folder.
 
-- Pin the extension, set the timer, and have a good working time!
+- Turn on the extension, pin it, set the timer, and have a good working time!
 
 ## Contributing
 
